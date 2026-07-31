@@ -1,4 +1,4 @@
-package com.vamshi.expense_tracker;
+package com.vamshi.expense_tracker.service;
 
 import com.vamshi.expense_tracker.dto.ExpenseRequest;
 import com.vamshi.expense_tracker.dto.ExpenseResponse;
