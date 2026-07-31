@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name="expenses")
@@ -28,7 +29,7 @@ public class Expense {
     private String category;
 
     @Column(nullable = false)
-    private String date;
+    private LocalDate date;
 
 
 }

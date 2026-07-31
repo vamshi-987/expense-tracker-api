@@ -87,7 +87,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() ->
                         new ExpenseNotFoundException(
-                                "Expense with id " + id + " not found"));
+                                "Expense not found with id: " + id));
 
         expenseRepository.delete(expense);
 
