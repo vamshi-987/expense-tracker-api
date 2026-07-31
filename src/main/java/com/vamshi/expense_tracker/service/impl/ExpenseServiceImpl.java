@@ -3,6 +3,7 @@ package com.vamshi.expense_tracker.service.impl;
 import com.vamshi.expense_tracker.dto.ExpenseRequest;
 import com.vamshi.expense_tracker.dto.ExpenseResponse;
 import com.vamshi.expense_tracker.entity.Expense;
+import com.vamshi.expense_tracker.exception.ExpenseNotFoundException;
 import com.vamshi.expense_tracker.mapper.ExpenseMapper;
 import com.vamshi.expense_tracker.repository.ExpenseRepository;
 import com.vamshi.expense_tracker.service.ExpenseService;
@@ -83,7 +84,12 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     public void deleteExpense(Long id) {
 
-        expenseRepository.deleteById(id);
+        Expense expense = expenseRepository.findById(id)
+                .orElseThrow(() ->
+                        new ExpenseNotFoundException(
+                                "Expense with id " + id + " not found"));
+
+        expenseRepository.delete(expense);
 
     }
 
