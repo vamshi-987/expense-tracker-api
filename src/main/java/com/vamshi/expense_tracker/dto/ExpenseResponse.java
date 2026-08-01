@@ -1,12 +1,18 @@
 package com.vamshi.expense_tracker.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Schema(description = "Response object returned after expense operations")
 public class ExpenseResponse {
 
@@ -29,10 +35,16 @@ public class ExpenseResponse {
     private BigDecimal amount;
 
     @Schema(
-            description = "Expense category",
+            description = "Expense category name",
             example = "Food"
     )
     private String category;
+
+    @Schema(
+            description = "Expense category ID",
+            example = "1"
+    )
+    private Long categoryId;
 
     @Schema(
             description = "Expense date",

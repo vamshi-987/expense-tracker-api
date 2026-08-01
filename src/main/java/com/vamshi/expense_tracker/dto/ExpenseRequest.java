@@ -2,12 +2,18 @@ package com.vamshi.expense_tracker.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Schema(description = "Request object used to create a new expense")
 public class ExpenseRequest {
 
@@ -27,7 +33,7 @@ public class ExpenseRequest {
     private BigDecimal amount;
 
     @Schema(
-            description = "Expense category",
+            description = "Expense category name",
             example = "Food"
     )
     @NotBlank(message = "Category is required")

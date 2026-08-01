@@ -2,15 +2,15 @@ package com.vamshi.expense_tracker.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vamshi.expense_tracker.dto.ExpenseRequest;
+import com.vamshi.expense_tracker.entity.Category;
 import com.vamshi.expense_tracker.entity.Expense;
+import com.vamshi.expense_tracker.repository.CategoryRepository;
 import com.vamshi.expense_tracker.repository.ExpenseRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,18 +38,30 @@ class ExpenseControllerIntegrationTest {
     @Autowired
     private ExpenseRepository expenseRepository;
 
+    @Autowired
+    private CategoryRepository categoryRepository;
+
     @BeforeEach
     void cleanDatabase() {
         expenseRepository.deleteAll();
+        categoryRepository.deleteAll();
+    }
+
+    private Category getOrCreateCategory(String name) {
+        String normalizedName = name.trim().toLowerCase();
+        return categoryRepository.findByNameIgnoreCase(normalizedName)
+                .orElseGet(() -> categoryRepository.save(Category.builder().name(normalizedName).build()));
     }
 
     @Test
-    void shouldCreateExpense() throws Exception {
+    void shouldCreateExpenseWhenCategoryExistsCaseInsensitively() throws Exception {
+        // Pre-create category "food"
+        getOrCreateCategory("Food");
 
         ExpenseRequest request = new ExpenseRequest();
         request.setTitle("Lunch");
         request.setAmount(BigDecimal.valueOf(250));
-        request.setCategory("Food");
+        request.setCategory("Food"); // input as "Food", matches stored "food"
         request.setDate(LocalDate.now());
 
         mockMvc.perform(post("/api/v1/expenses")
@@ -59,17 +71,35 @@ class ExpenseControllerIntegrationTest {
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.title").value("Lunch"))
                 .andExpect(jsonPath("$.amount").value(250))
-                .andExpect(jsonPath("$.category").value("Food"));
+                .andExpect(jsonPath("$.category").value("food"))
+                .andExpect(jsonPath("$.categoryId").exists());
+    }
+
+    @Test
+    void shouldReturn404WhenAddingExpenseWithNonExistentCategory() throws Exception {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setTitle("Lunch");
+        request.setAmount(BigDecimal.valueOf(250));
+        request.setCategory("UnknownCategory");
+        request.setDate(LocalDate.now());
+
+        mockMvc.perform(post("/api/v1/expenses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message")
+                        .value("Category not found: UnknownCategory"))
+                .andExpect(jsonPath("$.validationErrors.category")
+                        .value("Category not found: UnknownCategory"));
     }
 
     @Test
     void shouldReturnAllExpenses() throws Exception {
-
         expenseRepository.save(
                 Expense.builder()
                         .title("Lunch")
                         .amount(BigDecimal.valueOf(250))
-                        .category("Food")
+                        .category(getOrCreateCategory("Food"))
                         .date(LocalDate.now())
                         .build());
 
@@ -77,7 +107,7 @@ class ExpenseControllerIntegrationTest {
                 Expense.builder()
                         .title("Petrol")
                         .amount(BigDecimal.valueOf(500))
-                        .category("Travel")
+                        .category(getOrCreateCategory("Travel"))
                         .date(LocalDate.now())
                         .build());
 
@@ -87,13 +117,12 @@ class ExpenseControllerIntegrationTest {
     }
 
     @Test
-    void shouldReturnExpensesByCategory() throws Exception {
-
+    void shouldReturnExpensesByCategoryCaseInsensitively() throws Exception {
         expenseRepository.save(
                 Expense.builder()
                         .title("Lunch")
                         .amount(BigDecimal.valueOf(250))
-                        .category("Food")
+                        .category(getOrCreateCategory("Food"))
                         .date(LocalDate.now())
                         .build());
 
@@ -101,24 +130,23 @@ class ExpenseControllerIntegrationTest {
                 Expense.builder()
                         .title("Fuel")
                         .amount(BigDecimal.valueOf(400))
-                        .category("Travel")
+                        .category(getOrCreateCategory("Travel"))
                         .date(LocalDate.now())
                         .build());
 
-        mockMvc.perform(get("/api/v1/expenses/category/Food"))
+        mockMvc.perform(get("/api/v1/expenses/category/FOOD"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].category").value("Food"));
+                .andExpect(jsonPath("$[0].category").value("food"));
     }
 
     @Test
     void shouldReturnTotalExpenses() throws Exception {
-
         expenseRepository.save(
                 Expense.builder()
                         .title("Lunch")
                         .amount(BigDecimal.valueOf(250))
-                        .category("Food")
+                        .category(getOrCreateCategory("Food"))
                         .date(LocalDate.now())
                         .build());
 
@@ -126,23 +154,22 @@ class ExpenseControllerIntegrationTest {
                 Expense.builder()
                         .title("Fuel")
                         .amount(BigDecimal.valueOf(500))
-                        .category("Travel")
+                        .category(getOrCreateCategory("Travel"))
                         .date(LocalDate.now())
                         .build());
 
         mockMvc.perform(get("/api/v1/expenses/total"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("750"));
+                .andExpect(jsonPath("$").value(750));
     }
 
     @Test
     void shouldDeleteExpense() throws Exception {
-
         Expense savedExpense = expenseRepository.save(
                 Expense.builder()
                         .title("Lunch")
                         .amount(BigDecimal.valueOf(250))
-                        .category("Food")
+                        .category(getOrCreateCategory("Food"))
                         .date(LocalDate.now())
                         .build());
 
@@ -156,7 +183,6 @@ class ExpenseControllerIntegrationTest {
 
     @Test
     void shouldReturn404WhenExpenseNotFound() throws Exception {
-
         mockMvc.perform(delete("/api/v1/expenses/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message")
@@ -165,9 +191,7 @@ class ExpenseControllerIntegrationTest {
 
     @Test
     void shouldReturnValidationErrors() throws Exception {
-
         ExpenseRequest request = new ExpenseRequest();
-
         request.setTitle("");
         request.setAmount(BigDecimal.valueOf(-100));
         request.setCategory("");
