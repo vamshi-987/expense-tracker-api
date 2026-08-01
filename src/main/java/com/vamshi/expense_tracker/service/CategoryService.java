@@ -2,6 +2,7 @@ package com.vamshi.expense_tracker.service;
 
 import com.vamshi.expense_tracker.dto.CategoryRequest;
 import com.vamshi.expense_tracker.dto.CategoryResponse;
+import com.vamshi.expense_tracker.dto.DeleteCategoryResponse;
 
 import java.util.List;
 
@@ -32,4 +33,12 @@ public interface CategoryService {
      * @return category response
      */
     CategoryResponse getCategoryById(Long id);
+
+    /**
+     * Deletes a category by ID along with all associated expenses.
+     *
+     * @param id category ID
+     * @return delete category response with confirmation message and deleted category details
+     */
+    DeleteCategoryResponse deleteCategory(Long id);
 }

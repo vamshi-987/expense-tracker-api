@@ -1,6 +1,8 @@
 package com.vamshi.expense_tracker.repository;
 
 import com.vamshi.expense_tracker.entity.Expense;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,9 +16,19 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     List<Expense> findByCategory_NameIgnoreCase(String categoryName);
 
+    Page<Expense> findByCategory_NameIgnoreCase(String categoryName, Pageable pageable);
+
+    Page<Expense> findByTitleContainingIgnoreCaseOrCategory_NameContainingIgnoreCase(
+            String titleKeyword,
+            String categoryKeyword,
+            Pageable pageable
+    );
+
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e")
     BigDecimal sumTotalExpenses();
 
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE LOWER(e.category.name) = LOWER(:categoryName)")
     BigDecimal sumTotalByCategory(@Param("categoryName") String categoryName);
+
+    void deleteByCategory_Id(Long categoryId);
 }

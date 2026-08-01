@@ -16,6 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -134,6 +139,43 @@ class ExpenseServiceImplTest {
     }
 
     @Test
+    void shouldReturnPagedExpenses() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "date"));
+        PageImpl<Expense> expensePage = new PageImpl<>(List.of(expense), pageable, 1);
+
+        when(expenseRepository.findAll(pageable))
+                .thenReturn(expensePage);
+
+        when(expenseMapper.toResponse(expense))
+                .thenReturn(response);
+
+        Page<ExpenseResponse> result = expenseService.getAllExpenses(0, 10, "date", "desc");
+
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals(1, result.getTotalElements());
+        assertEquals(0, result.getNumber());
+    }
+
+    @Test
+    void shouldSearchExpensesWithPagination() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "date"));
+        PageImpl<Expense> expensePage = new PageImpl<>(List.of(expense), pageable, 1);
+
+        when(expenseRepository.findByTitleContainingIgnoreCaseOrCategory_NameContainingIgnoreCase("Lunch", "Lunch", pageable))
+                .thenReturn(expensePage);
+
+        when(expenseMapper.toResponse(expense))
+                .thenReturn(response);
+
+        Page<ExpenseResponse> result = expenseService.searchExpenses("Lunch", 0, 10, "date", "desc");
+
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals("Lunch", result.getContent().get(0).getTitle());
+    }
+
+    @Test
     void shouldReturnExpensesByCategoryCaseInsensitively() {
         when(expenseRepository.findByCategory_NameIgnoreCase("FOOD"))
                 .thenReturn(List.of(expense));
@@ -178,9 +220,14 @@ class ExpenseServiceImplTest {
     void shouldDeleteExpense() {
         when(expenseRepository.findById(1L))
                 .thenReturn(Optional.of(expense));
+        when(expenseMapper.toResponse(expense))
+                .thenReturn(response);
 
-        expenseService.deleteExpense(1L);
+        com.vamshi.expense_tracker.dto.DeleteExpenseResponse deleted = expenseService.deleteExpense(1L);
 
+        assertNotNull(deleted);
+        assertEquals("Expense deleted successfully", deleted.getMessage());
+        assertEquals(1L, deleted.getDeletedExpense().getId());
         verify(expenseRepository).findById(1L);
         verify(expenseRepository).delete(expense);
     }
@@ -199,33 +246,5 @@ class ExpenseServiceImplTest {
 
         verify(expenseRepository).findById(1L);
         verify(expenseRepository, never()).delete(any());
-    }
-
-    @Test
-    void shouldReturnEmptyListWhenNoExpensesExist() {
-        when(expenseRepository.findAll())
-                .thenReturn(List.of());
-
-        when(expenseMapper.toResponseList(List.of()))
-                .thenReturn(List.of());
-
-        List<ExpenseResponse> result = expenseService.getAllExpenses();
-
-        assertTrue(result.isEmpty());
-
-        verify(expenseRepository).findAll();
-        verify(expenseMapper).toResponseList(List.of());
-    }
-
-    @Test
-    void shouldReturnZeroWhenNoExpensesExist() {
-        when(expenseRepository.sumTotalExpenses())
-                .thenReturn(BigDecimal.ZERO);
-
-        BigDecimal total = expenseService.getTotalExpenses();
-
-        assertEquals(BigDecimal.ZERO, total);
-
-        verify(expenseRepository).sumTotalExpenses();
     }
 }

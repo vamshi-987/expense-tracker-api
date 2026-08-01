@@ -2,6 +2,7 @@ package com.vamshi.expense_tracker.controller;
 
 import com.vamshi.expense_tracker.dto.CategoryRequest;
 import com.vamshi.expense_tracker.dto.CategoryResponse;
+import com.vamshi.expense_tracker.dto.DeleteCategoryResponse;
 import com.vamshi.expense_tracker.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -45,5 +46,14 @@ public class CategoryController {
 
         CategoryResponse category = categoryService.getCategoryById(id);
         return ResponseEntity.ok(category);
+    }
+
+    @Operation(summary = "Delete category by ID and all associated expenses")
+    @ApiResponse(responseCode = "200", description = "Category and joined expenses deleted")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<DeleteCategoryResponse> deleteCategory(@PathVariable Long id) {
+
+        DeleteCategoryResponse response = categoryService.deleteCategory(id);
+        return ResponseEntity.ok(response);
     }
 }

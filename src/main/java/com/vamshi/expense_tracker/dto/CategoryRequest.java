@@ -1,5 +1,6 @@
 package com.vamshi.expense_tracker.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -16,5 +17,6 @@ public class CategoryRequest {
 
     @Schema(description = "Name of the category", example = "Food")
     @NotBlank(message = "Category name is required")
+    @JsonAlias({"category", "categoryName", "category_name"})
     private String name;
 }
